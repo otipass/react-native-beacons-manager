@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.RemoteException;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.facebook.react.bridge.Callback;
@@ -32,6 +32,7 @@ import org.altbeacon.beacon.service.RunningAverageRssiFilter;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class BeaconsAndroidModule extends ReactContextBaseJavaModule implements BeaconConsumer {
@@ -230,7 +231,12 @@ public class BeaconsAndroidModule extends ReactContextBaseJavaModule implements 
     private WritableMap createMonitoringResponse(Region region) {
         WritableMap map = new WritableNativeMap();
         map.putString("identifier", region.getUniqueId());
-        map.putString("uuid", region.getId1().toString());
+        try {
+            map.putString("uuid", region.getId1().toString());
+        } catch(Exception e) {
+            Log.e("Can't parse UUID", e.getMessage());
+            map.putString("uuid", "");
+        }
         map.putInt("major", region.getId2() != null ? region.getId2().toInt() : 0);
         map.putInt("minor", region.getId3() != null ? region.getId3().toInt() : 0);
         return map;
@@ -264,6 +270,7 @@ public class BeaconsAndroidModule extends ReactContextBaseJavaModule implements 
         Log.d(LOG_TAG, "startRanging, rangingRegionId: " + regionId + ", rangingBeaconUuid: " + beaconUuid);
         try {
             Region region = createRegion(regionId, beaconUuid);
+            RunningAverageRssiFilter.setSampleExpirationMilliseconds(5000);
             mBeaconManager.startRangingBeaconsInRegion(region);
             resolve.invoke();
         } catch (Exception e) {
